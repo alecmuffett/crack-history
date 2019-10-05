@@ -1,0 +1,28 @@
+Bugs as of 1 Mar 1992:-
+
+* Crack: is known to occasionally hang during a "Crack -network" whilst
+rshing from machine to machine on some architectures.  It's a persistent
+problem at some sites, when Crack rsh'es to a particular machine and
+stays there, and thus never calls the next machine.
+
+FIX: mark machines that hang Crack with the "-f" option in network.conf
+file, then the 'rsh' will be backgrounded and Crack will continue to the
+next machine.  The tweak in Crack v4.1 to close descriptors 0->9 on all
+machines (esp Apollos) may help this.
+
+* Beta testers on DEC 5500s have reported crack-pwc crashing when
+compiled with the optimiser.  This apparently doesn't happen using GCC
+or when optimisation is turned off (heisenbug?)
+
+Be warned.
+
+* Earlyish System V type systems will have problems if the environment
+variable SHELL is not set to "/bin/sh" - this is because SV will
+blithely ignore the "#!/bin/sh" line and invoke a csh anyway, if thats
+what you prefer.
+
+This is probably most easily diagnosed when Crack bails out like this:
+
+	CRACK_HOME=/your/crack/directory: Command not found.
+
+- or similar.

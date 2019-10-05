@@ -1,0 +1,11 @@
+#!/bin/sh
+
+for file in $*
+do
+	( gzip -9 $file ) ||
+		( compress $file ) ||
+		( pack $file ) ||
+		( echo $0: cant compress $file )
+done
+
+exit 0

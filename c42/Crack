@@ -1,0 +1,330 @@
+#!/bin/sh
+
+###
+# This program is copyright Alec Muffett 1991, and is provided as part of
+# the Crack v4.1 Password Cracking package.  The author disclaims all
+# responsibility or liability with respect to it's usage or its effect
+# upon hardware or computer systems, and maintains copyright as set out in
+# the "LICENCE" document which accompanies distributions of Crack v4.0 and
+# upwards. So there...
+###
+
+###
+# CRACK_HOME: You must put DOUBLE QUOTES around this and have /bin/csh if
+# you work relative to ~username - this is the Crack installation directory.
+# (currently developing on "dougal")
+###
+
+CRACK_HOME="/export/home/alecm/misc/crack/c42"
+
+###
+# CRACK_OUT: This is the directory into which all the password guesser
+# output files are to be stored. This affects only the "out*" files, and
+# not "D*" or "P*", due to restraints on the support scripts.
+###
+
+CRACK_OUT="$CRACK_HOME"
+
+###
+# Umask for security's sake - stops files being world readable (if you
+# don't have it in your .login)
+###
+
+umask 077
+
+###
+# DEFAULT_BIN : For non-network cracks, you can leave this as 'generic'.
+# Setting this to `arch` is non-portable.
+###
+
+DEFAULT_BIN="generic"
+
+###
+# List of standard dictionaries that you should have to provide words;
+#
+###
+
+STDDICT="/usr/dict/words"
+
+###
+# Compress: name of a compression prog (compress & pack supported) to be
+# applied to the bigdict to save filespace
+###
+
+compress="/usr/ucb/compress"
+
+###
+############### FROM HERE ON IN IT'S ALL MY FAULT ###############
+###
+
+version="4.1f RELEASE"			# version number
+pwl=""					# user specified
+domail=""				# user specified
+fgnd=""					# user specified
+remote=""				# program specified
+nice=""					# user specified
+rcvr=""					# user specified
+inputfile="/tmp/pw.$$"			# program specified, also in pwc.c
+verbose=""				# user specified
+cf_file="Scripts/network.conf"		# program specified
+bigdict="Dicts/bigdict"			# program specified
+lockdict="Dicts/.lockfile"		# program specified
+
+CRACK_HOME_UNRES="$CRACK_HOME"
+
+if [ -f "/bin/csh" ]			# -x bombs on Ultrix
+then
+	CRACK_OUT=` /bin/csh -fc "echo $CRACK_OUT" `
+	CRACK_HOME=` /bin/csh -fc "echo $CRACK_HOME" `
+fi
+
+if [ ! -d "$CRACK_OUT" ]
+then
+	echo "Warning: CRACK_OUT directory reset to directory '.'"
+	CRACK_OUT="."
+fi
+
+export CRACK_HOME
+export CRACK_OUT
+export DEFAULT_BIN
+export CRACK_HOME_UNRES
+
+###
+# Check existance of a home directory
+###
+
+if [ "$CRACK_HOME" != "" -a -d "$CRACK_HOME" ]
+then
+	cd $CRACK_HOME || exit 1
+else
+	echo "Fatal error: the directory $CRACK_HOME does not exist."
+	echo ""
+	echo "Please set the value of CRACK_HOME in the 'Crack' script to the name of
+	echo "the installation directory."
+	echo ""
+	echo "The current working directory is" `pwd`"
+	exit 1
+fi
+
+###
+# Announce ourselves.
+###
+
+echo "Crack $version, The Password Cracker (c) Alec D.E. Muffett, 1992"
+echo "Invoked as: $0 $*"
+
+if [ $# = 0 ]
+then
+	echo "Usage:    $0 [options] [bindir] passwdfile [...]"
+	echo "Or:       $0 -network [options] passwdfile [...]"
+	echo "Options:-"
+	echo "	-v              - to produce verbose output"
+	echo "	-nnicevalue     - to run niced to 'nicevalue'"
+	echo "	-rpointfile     - to recover a crashed-out job"
+	echo "	-Rpointfile     - to recover (with verify) a crashed-out job"
+	echo "	-f		- to run in foreground (output to stdout)"
+	echo "	-m		- to mail the user a warning message if cracked"
+	exit 1
+fi
+
+###
+# Make the dictionaries. God this is SOOOOO much simpler...
+###
+
+if [ ! -f $lockdict ]
+then
+	echo "Making dictionary $bigdict - This may take some time..."
+	(
+		for dictfile in $STDDICT DictSrc/*
+		do
+			case $dictfile in
+				*.Z)
+					zcat $dictfile
+					;;
+				*.z)
+					pcat $dictfile
+					;;
+				*)
+					cat $dictfile
+					;;
+			esac
+		done
+	) |
+	grep -v '^#' |
+	sort -T /local2/tmp |
+	uniq > $bigdict
+
+# I do not do "tr A-Z a-z" here because of words like LaTeX and
+# BiCapitalisation, which are potential passwords, but the structure of
+# which would be irrecoverably destroyed by lowercaseing.
+
+	echo touch $lockdict		# for future refs.
+	touch $lockdict
+
+	if [ "x$compress" != "x" -a -f "$compress" ]
+	then
+		echo $compress $bigdict
+		# if this fails, tweak the $compress definition above...
+		$compress $bigdict || exit 1
+	fi
+else
+	echo Dictionary Dicts/* intact
+fi
+
+###
+# Check your invocation...
+###
+
+if [ "x$1" = "x-network" ]
+then
+	shift
+	Scripts/Crack.network $*
+	exit 0
+fi
+
+while :
+do
+	case $1 in
+		-network)
+			echo "Error: -network (if specified) must be first argument"
+			exit 1
+			;;
+		-X*)
+			remote=$1
+			shift
+			;;
+		-m*)
+			domail=$1
+			shift
+			;;
+		-l*)
+			pwl=$1
+			shift
+			;;
+		-f*)
+			fgnd=$1
+			shift
+			;;
+		-n*)
+			nice=$1
+			shift
+			;;
+		-r*)
+			rcvr=$1
+			shift
+			;;
+		-v*)
+			verbose=$1
+			shift
+			;;
+		-*)
+			echo "Error: unknown argument $1"
+			shift
+			;;
+		*)
+			break
+			;;
+	esac
+done
+
+###
+# Test first non-switch argument for existance, hence where to put binaries
+###
+
+if [ -f "$1" ]
+then
+	CRACK_ARCH="$CRACK_HOME/$DEFAULT_BIN"
+else
+	CRACK_ARCH="$CRACK_HOME/$1"
+	shift
+fi
+
+export CRACK_ARCH
+
+echo "Binary directory: $CRACK_ARCH"
+
+###
+# Make the password cracker
+###
+
+Scripts/do_pwc $CRACK_ARCH || exit 1
+
+###
+# Process input to the program
+###
+
+echo "Sorting data for Crack."
+
+if [ "x$remote" != "x" ]
+then
+	cat > $inputfile
+else
+	out_init=$CRACK_OUT/out.$$
+
+	Scripts/do_join $out_init $* > $inputfile || exit 1
+
+	if [ "x$domail" != "x" ]
+	then
+		MISCREANTS=`awk '/Guessed/{print $6}' < $out_init`
+		echo Sending Warning Mail to $MISCREANTS
+		Scripts/nastygram $MISCREANTS
+	fi
+
+	if [ "x$fgnd" != "x" ]
+	then
+		cat $out_init || exit 1
+		rm -f $out_init
+	fi
+fi
+
+###
+# Check the runtime scratch file directory for pwc
+###
+
+if [ ! -d Runtime ]
+then
+	echo "Creating Runtime Directory."
+	mkdir Runtime || exit 1
+fi
+
+###
+# Kick it off into the background ?
+###
+# This is the message which has drawn the most complaints...  However, I
+# have no way of knowing the name in advance, and I can't have crack-pwc
+# print it on stdout due to hanging file descriptors which bollox a
+# network crack.  Hence I HAVE to be vague...
+###
+
+flags="$remote $fgnd $domail $pwl $nice $rcvr $verbose -i $inputfile"
+
+echo "Flags:" $flags Dicts/*
+
+rm out.*
+
+if [ "x$fgnd" != "x" ]
+then
+	echo "Running program in foreground"
+	$CRACK_ARCH/crack-pwc $flags Dicts/* < /dev/null 2>&1
+else
+	echo "Running program in background"
+	# Apollos/Suns need first 7 descriptors closed to bg properly
+	# from ksh - hence overkill - AEM
+	nohup $CRACK_ARCH/crack-pwc $flags Dicts/* </dev/null >/dev/null \
+		2>&1 3>&1 4>&1 5>&1 6>&1 7>&1 8>&1 9>&1 &
+	echo "Output will be written to a file in directory $CRACK_OUT"
+	echo "named 'out<something>'"
+fi
+
+sleep 1
+
+test -f nohup.out && rm nohup.out
+
+###
+# There are horrible timeraces involved in removing $tmpfile, so I dont.
+# Crack-pwc does. Still. Hohum.
+###
+
+tail -f out.c*
+
+exit 0

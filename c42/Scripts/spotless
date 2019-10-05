@@ -1,0 +1,23 @@
+#!/bin/sh
+
+###
+# This program is copyright Alec Muffett 1991, and is provided as part of
+# the Crack v4.0 Password Cracking package.  The author disclaims all
+# responsibility or liability with respect to it's usage or its effect
+# upon hardware or computer systems, and maintains copyright as set out in
+# the "LICENCE" document which accompanies distributions of Crack v4.0 and
+# upwards. So there...
+###
+
+echo "Are you sure that you want to do this ? (no)"
+read ans
+
+case $ans in
+	[Yy]*)
+		make -f Scripts/crack.mf spotless
+		;;
+	*)
+		;;
+esac
+
+exit 0

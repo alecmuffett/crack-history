@@ -1,0 +1,40 @@
+#!/bin/sh
+
+###
+# This program is copyright Alec Muffett 1991, and is provided as part of
+# the Crack v4.0 Password Cracking package.  The author disclaims all
+# responsibility or liability with respect to it's usage or its effect
+# upon hardware or computer systems, and maintains copyright as set out in
+# the "LICENCE" document which accompanies distributions of Crack v4.0 and
+# upwards. So there...
+###
+
+for username in $*
+do
+        mail $username <<EndOfLetter
+                                        `date`
+
+Dear $username,
+
+The login password you use for the account "$username" has been found to
+be insecure by the "Crack" password guessing program.  You must change
+your password as soon as possible. 
+
+Passwords which are not easily compromised by programs such as "Crack"
+are based upon non-dictionary words, hence any word which might appear
+in a dictionary, EVEN IF IT IS SUPPOSEDLY A OBSCURE WORD is unsuitable. 
+
+Similarly, any password which is derived from your name, department or
+other personal information is unsuitable because it can be easily
+guessed. 
+
+It is important that password security be maintained at a high level for
+the sake of ALL the people who use these computers.  We thank you for
+your co-operation in this matter. 
+
+                                Yours,
+
+                                        Alec Muffett, Aberystwyth, UK
+                                        pp Your System Administrator
+EndOfLetter
+done

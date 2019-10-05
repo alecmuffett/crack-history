@@ -1,0 +1,47 @@
+#!/bin/sh
+
+exec </dev/null >/dev/null 2>&1
+
+POLL=60
+LOCKFILE="LOCK.CRACK"
+
+###
+# Write out a datestamp
+###
+# date >> STAMP
+
+while :
+do
+###
+# Sleep infinitely, whilst there exists a lockfile in $CRACK_HOME
+###
+	if [ -f $LOCKFILE ]
+	then
+		sleep $POLL
+		continue
+	fi
+
+###
+# Leave the CPU alone when Gilly's logged on playing tetris
+###
+	if who | egrep '^gilly'
+	then
+		sleep $POLL
+		continue
+	fi
+
+###
+# Go to sleep between 0800 and 1759 inclusive, except weekends
+###
+#	set `date '+%H %w'`	# $1=hour(00..23) $2=day(0..6)
+#
+#	if [ "$1" -ge 8 -a "$1" -le 17 -a "$2" -ge 1 -a "$2" -le 5 ]
+#	then
+#		sleep $POLL
+#		continue
+#	fi
+
+	break	# like, y'know, totally gross, man...
+done
+
+exit 0

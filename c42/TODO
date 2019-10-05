@@ -1,0 +1,10 @@
+* replace recover/checkpoint code in entirety
+* make work over rsh link entirely
+* dictionaries shipped from central machine
+* code shipped from central machine (!)
+* regexp rules (is this really necessary ? what syntax the commands ?)
+* bottles of glenmorangie always welcome
+* multiprocessing ability
+
+- most of these will be in v5.0
+						- alec

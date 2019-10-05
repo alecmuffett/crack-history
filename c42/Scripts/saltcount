@@ -1,0 +1,28 @@
+#!/bin/sh
+
+###
+# This program is copyright Alec Muffett 1991, and is provided as part of
+# the Crack v4.0 Password Cracking package.  The author disclaims all
+# responsibility or liability with respect to it's usage or its effect
+# upon hardware or computer systems, and maintains copyright as set out in
+# the "LICENCE" document which accompanies distributions of Crack v4.0 and
+# upwards. So there...
+###
+
+###
+# Count the number of individual salts in do_join format...
+###
+
+awk -F: '
+BEGIN {
+	i = 0;		# Just in case there is no input
+}
+substr($3, 1, 2) != last {
+	i++;
+	last = substr($3, 1, 2);
+}
+END {
+	print i;
+}'
+
+exit 0

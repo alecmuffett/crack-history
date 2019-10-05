@@ -1,0 +1,50 @@
+#!/bin/sh
+
+###
+# This program is copyright Alec Muffett 1991, and is provided as part of
+# the Crack v4.0 Password Cracking package.  The author disclaims all
+# responsibility or liability with respect to it's usage or its effect
+# upon hardware or computer systems, and maintains copyright as set out in
+# the "LICENCE" document which accompanies distributions of Crack v4.0 and
+# upwards. So there...
+###
+
+shadow=/etc/shadow
+passwd=/etc/passwd
+
+###
+# Merge /etc/shadow & /etc/passwd for Crack.  Assume 7 fields for /etc/passwd,
+# and other for /etc/shadow
+###
+
+cat $passwd $shadow |
+awk -F: '
+BEGIN {
+	OFS = ":";
+}
+
+NF == 7 {
+	pwents[$1] = $0;
+}
+
+NF != 7 {
+	shadow_pw[$1] = $2;
+}
+
+END {
+	for (pw_name in pwents)
+	{
+		fields = split(pwents[pw_name], pwd, ":");
+
+		if (shadow_pw[pwd[1]] != "LOCKED")
+		{
+			print 	pwd[1], \
+				shadow_pw[pwd[1]], \
+				pwd[3], \
+				pwd[4], \
+			        pwd[5], \
+			        pwd[6], \
+			        pwd[7];
+		}
+	}
+}'

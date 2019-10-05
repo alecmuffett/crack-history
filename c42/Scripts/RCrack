@@ -1,0 +1,175 @@
+#!/bin/sh
+
+###
+# This program is copyright Alec Muffett 1991, and is provided as part of
+# the Crack v4.0 Password Cracking package.  The author disclaims all
+# responsibility or liability with respect to it's usage or its effect
+# upon hardware or computer systems, and maintains copyright as set out in
+# the "LICENCE" document which accompanies distributions of Crack v4.0 and
+# upwards. So there...
+###
+
+###
+# For those ignorant of 'rsh', what I am trying to build is a line of
+# the form
+#	      rsh hostname [-n] [-l remoteuser] command [args ...]
+#
+###
+
+machine=`(uname) 2>&1`			# What architecture are we on ?
+
+###
+# Map architecture to rsh-equivalent...
+###
+
+case $machine in
+	HP*UX)			# Hewlett Packard boxen
+		remote_shell="remsh"
+		;;
+# 	XENIX|Xenix)		# Just a suggestion...
+#		remote_shell="rcmd"
+#		;;
+	*)				# default
+		remote_shell="rsh"
+		;;
+esac
+
+###
+# Are we going to kick rsh into the background, or are we going to
+# background the thing on the remote end ?
+###
+
+asynch_mode=""
+
+if [ "x$1" = "x-asynch" ]
+then
+	echo "(asynchronous $remote_shell mode)"
+	asynch_mode="$1"
+	shift
+else
+	echo "(remotely backgrounded mode)"
+fi
+
+###
+# Segments of input data to read.
+###
+
+startline=$1
+shift
+stopline=$1
+shift
+
+datafile=/tmp/rcrk.$$		# temporary data file
+
+###
+# Awk reads from stdin... Create an input file for rsh...
+###
+
+awk -F: '
+BEGIN {
+	usercount = 0;
+	saltcount = 0;
+	startsalt = '"$startline"';
+	stopsalt = '"$stopline"';
+}
+
+{
+	if (substr($3, 1, 2) != last)
+	{
+	    saltcount++;
+	    last = substr($3, 1, 2);
+	}
+
+	if (saltcount >= startsalt && saltcount <= stopsalt)
+	{
+		usercount++;
+		print $0;
+	}
+}' > $datafile
+
+###
+# Test that we should actually bother to do anything.
+###
+
+numlines=`wc -l < $datafile`
+
+###
+# Must not quote $numlines here for comparison to work
+###
+
+if [ $numlines = 0 ]
+then
+	echo "RCrack: Nothing left to dispatch to remote host."
+	rm -f $datafile
+	exit 0
+else
+	echo Salted Segment comprises $numlines users	# Don't quote this...
+fi
+
+###
+# Now for the important bits. Create a diefile pointing to a remote diefile
+# (It's easier to get Crack.network to wire $remotediefile into arglist)
+###
+
+remhost=$1				# Name of remote host ($2 == Crack path)
+remotediefile=$3			# Name of remote diefile
+localdiefile=Runtime/DR$remhost$$	# Local pointer to above
+
+awk -F: '
+BEGIN {
+	rshell = "'"$remote_shell"'";
+	rhost = "'"$remhost"'";
+	rdie = "'"$remotediefile"'";
+	rdie = substr(rdie,3,length(rdie) - 2);
+}
+
+$1 == rhost {
+	if ($4 != "")
+	{
+		rshf = "-l " $4 " -n";
+	} else
+	{
+		rshf = "-n";
+	}
+	if ($5 != "")
+	{
+		nf = split($5, path, "/");
+		ch = path[1];
+		for (i = 2; i < nf; i++)
+		{
+			ch = ch "/" path[i];
+		}
+	} else
+	{
+		ch = "'"$CRACK_HOME_UNRES"'";
+	}
+}
+
+END {
+	print "#!/bin/sh";
+	print "rm $0 && " rshell, rhost, rshf, "\"cd " ch ";" rdie "\"";
+}' < Scripts/network.conf > $localdiefile
+
+chmod 700 $localdiefile
+
+if [ "x$asynch_mode" = "x-asynch" ]
+then
+	if [ "x$CRACK_OUT" != "x" ]
+	then
+		outfile=$CRACK_OUT/out.r$$
+	else
+		outfile=./out.r$$
+	fi
+
+	# 'rsh' traps SIGHUP and survives OK
+
+	echo "Invoking: $remote_shell $@ <$datafile >$outfile 2>&1 && rm -f $datafile $localdiefile &"
+	$remote_shell "$@" <$datafile >$outfile 2>&1 && rm -f $datafile $localdiefile &
+else
+	# Perfectly ordinary network crack.
+	echo "Invoking: $remote_shell $@ < $datafile"
+	$remote_shell "$@" < $datafile
+	rm -f $datafile
+fi
+
+exit 0

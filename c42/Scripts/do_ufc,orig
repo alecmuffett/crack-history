@@ -1,0 +1,66 @@
+#!/bin/sh
+
+###
+# This program is copyright Alec Muffett 1991, and is provided as part of
+# the Crack v4.0 Password Cracking package.  The author disclaims all
+# responsibility or liability with respect to it's usage or its effect
+# upon hardware or computer systems, and maintains copyright as set out in
+# the "LICENCE" document which accompanies distributions of Crack v4.0 and
+# upwards. So there...
+###
+
+###
+# This script tries to provide an intelligent hook to the UFC-crypt library
+###
+
+if [ "x$CRACK_HOME" = "x" ]
+then
+	CRACK_HOME=".."		# for would-be developers in the Sources dir
+fi
+
+UFCLIB=libufc.a
+SRCDIR=$CRACK_HOME/Sources
+UFCDIR=$CRACK_HOME/ufc-crypt
+
+rm -f $SRCDIR/libufc.a		# just in case
+
+echo "Looking for UFC-crypt in $UFCDIR"
+
+if [ ! -d $UFCDIR ]
+then
+	echo "Cannot find $UFCDIR - cannot use UFC-crypt on this platform"
+	exit 1
+fi
+
+cd $UFCDIR || exit 1
+
+echo "Crack: Trying to compile UFC-crypt (external product by Michael Glad)"
+echo "Crack: Working in $UFCDIR"
+
+if [ -f libufc.a ]
+then
+	echo "Library libufc.a exists. Testing viability..."
+	rm -f ufc
+	make ufc
+	if [ $? = 0 ]
+	then
+		echo "Testing ufc"
+		./ufc 1
+		if [ $? = 0 ]
+		then
+			echo "Crack will use UFC-crypt on this platform"
+			exit 0
+		fi
+	fi
+	echo "Library is unviable on this architecture. Remaking"
+fi
+
+make clean || exit 1
+
+make ufc || exit 1
+
+echo "Testing ufc"
+./ufc 1 || exit 1
+
+echo "Crack WILL use $UFCDIR/libufc.a on this platform."
+exit 0

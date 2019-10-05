@@ -1,0 +1,200 @@
+#!/bin/sh
+
+###
+# This program is copyright Alec Muffett 1991, and is provided as part of
+# the Crack v4.0 Password Cracking package.  The author disclaims all
+# responsibility or liability with respect to it's usage or its effect
+# upon hardware or computer systems, and maintains copyright as set out in
+# the "LICENCE" document which accompanies distributions of Crack v4.0 and
+# upwards. So there...
+###
+# This program reads the network.conf and breaks up the sorted password
+# file and runs RCrack to kick Crack up on all the machines and feeds 
+# the file to it.
+###
+# Okay, if you don't like this bit of code, YOU think of a totally
+# portable way to do this - in shell scripts without using PERL - Alec.
+###
+
+cf=Scripts/network.conf
+tf=/tmp/mcp.$$
+
+###
+# Check that the config file is in place
+###
+
+if [ ! -f $cf -o ! -s $cf ]
+then
+	echo "Crack.network: empty or missing config file: $cf"
+	exit 1
+fi
+
+###
+# Parse arguments
+###
+
+args=""
+files=""
+domail=""
+
+for i in $*
+do
+	if [ -f "$i" ]
+	then
+		files="$files $i"
+	else
+		case $i in
+			-f*)
+				echo "Crack: -f option on COMMAND LINE incompatible with networking - Ignored"
+				;;
+			-m*)
+				domail="$i"
+				args="$args $i"
+				;;
+			*)
+				args="$args $i"
+				;;
+		esac
+	fi
+done
+
+###
+# Get on with your proper job
+###
+
+echo "Merging input data."
+
+if [ "$CRACK_OUT" != "" ]
+then
+	warn=$CRACK_OUT/out.$$
+else
+	warn=out.$$
+fi
+
+Scripts/do_join $warn $files > $tf
+
+if [ "x$domail" != "x" ]
+then
+	MISCREANTS=`awk '/Guessed/{print $6}' < $warn`
+	echo Sending Warning Mail to $MISCREANTS
+	Scripts/nastygram $MISCREANTS
+fi
+
+###
+# Statistics gathering
+###
+
+lines=`wc -l < $tf`
+saltlines=`Scripts/saltcount < $tf`
+
+# Must not quote $lines/$saltlines here for comparison to work
+if [ $lines = 0 -o $saltlines = 0 ]
+then
+	echo "Crack: no uncracked input to distribute."
+	exit 1
+fi
+
+echo "Starting analysis for Network-Crack."
+
+cat $cf |
+grep -v '^#' |
+grep -v '^$' |
+sort -t: +2 -n |
+awk -F: '
+BEGIN {
+	hostcount = 0;
+	totalweight = 0;
+	linecount = '"$lines"';
+	saltlinecount = '"$saltlines"';
+	iargs = "'"$args"'";
+	file = "'"$tf"'";
+}
+
+/^[a-zA-Z0-9]/ {
+	hostname[hostcount] = $1;
+	bintype[hostcount] = $2;
+	relpow[hostcount] = $3;
+	powtot += $3;
+
+	if (index($6, "-f") == 0)
+	{
+		asynch[hostcount] = "";
+	} else
+	{
+		asynch[hostcount] = "-asynch";
+	}
+
+	crackf[hostcount] = $6 " " iargs;  # useropts go second get priority
+
+	if ($4 == "")
+	{
+		rshuser[hostcount] = "";
+	} else
+	{
+		rshuser[hostcount] = "-l " $4;
+		crackf[hostcount] = crackf[hostcount] " -U" $4;
+	}
+
+	if ($5 == "")
+	{
+		crackp[hostcount] = "$CRACK_HOME_UNRES/Crack";
+	} else
+	{
+		crackp[hostcount] = $5;
+	}
+
+	crackf[hostcount] = iargs " " $6;
+	hostcount++;
+}
+
+END {
+	done = 1;
+	slice = 0.0;
+	remainder = 0.0;
+	todo = saltlinecount;
+	print "echo Users:", linecount;
+	print "echo Salts:", saltlinecount;
+	print "echo Remote Hosts:", hostcount;
+	print "echo Total power:", powtot;
+
+	for (i = 0; i < hostcount; i++)
+	{
+		if (i < hostcount - 1)
+		{
+# This balancing algorithm by: george@au.edu.monash.cc.moa (George Scott)
+# its wonderful - AEM
+			slice = relpow[i] / powtot;		# fraction
+			slice *= todo;				# percentage
+			slice = int(slice);			# round down
+			todo -= slice;				# remainder
+			powtot -= relpow[i];
+		} else
+		{
+			slice = todo;	# fastest machine gets the rest.
+			todo = 0;
+		}
+		if (slice > 0)
+		{
+			print "echo Calling", hostname[i], "for", slice, "different salts";
+
+			line = sprintf( \
+	   "Scripts/RCrack %s %d %d %s %s \"%s\" %s %s %s < %s", \
+				asynch[i], \
+				done, \
+				done + slice - 1, \
+				hostname[i], \
+				rshuser[i], \
+				crackp[i], \
+				"-XRuntime/RD'"$$"'." i, \
+				crackf[i], \
+				bintype[i], \
+				file);
+#			print "echo", line;
+			print line;
+		}
+		done += slice;
+	}
+}' | sh		# I'll bet you didn't expect this...
+
+rm $tf
+exit 0

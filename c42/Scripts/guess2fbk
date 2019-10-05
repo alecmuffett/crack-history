@@ -1,0 +1,37 @@
+#!/bin/sh
+
+###
+# This program is copyright Alec Muffett 1991, and is provided as part of
+# the Crack v4.0 Password Cracking package.  The author disclaims all
+# responsibility or liability with respect to it's usage or its effect
+# upon hardware or computer systems, and maintains copyright as set out in
+# the "LICENCE" document which accompanies distributions of Crack v4.0 and
+# upwards. So there...
+###
+
+###
+# guess2fbk : generates a 'feedback' file on stdout from output format
+# data.  On occasions when emergency construction is useful.
+###
+
+if [ $# = 0 ]
+then
+	echo "Usage:	$0 outputfile [...]"
+	exit 1
+fi
+
+###
+# Had to modify this awk script now that passwords are turning up with spaces
+###
+
+cat $* |
+awk '
+/Guessed/{
+	start = index($0, "[");
+	stop = index($0, "]");
+	print "!fb!:" $NF ":Y:" substr($0, start+1, stop - start - 1)
+}
+' |
+sort |
+uniq
+

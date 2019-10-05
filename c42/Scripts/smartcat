@@ -1,0 +1,68 @@
+#!/bin/sh
+
+###
+# smartcat.sh - (c) Alec Muffett, Aug 1993
+#
+# This script simplifies use of uncompress programs.  I've only added that
+# which seems sensible (ie: could possibly occur), and am not looking to
+# trap all cases, only plausible ones.  If you're gonna be either 1)
+# really weird, or 2) bloodymindedly pedantic, that's your problem
+###
+
+TMPDIR=/tmp
+
+PATH="/usr/bin:/usr/ucb:/bin:/usr/local/bin:$PATH"
+
+PCATF=$TMPDIR/pcat$$.z
+
+if [ "$1" = "" ]
+then
+	echo "Usage: $0 filename.ext1.ext2.ext3 ..."
+	exit 1
+elif [ "$1" != "-backend" ]
+then
+	for file in $*
+	do
+		$0 -backend $file < $file
+	done
+
+	exit 0
+fi
+
+###
+# ...else we're doing backend processing, creating:
+#
+#	cat < file.e3.e2.e1 | filter1 | filter2 | filter3
+###
+# note: we'd have problems supporting LHA/ZIP/LZH/UUD - as they are not
+#       implemented as pure filters.
+###
+
+shift
+
+file=$1
+
+case $file in
+	"")
+		echo "$0: error: ran off end of filename" 1>&2
+		exit 1 ;;
+
+	*.Z)
+		exec uncompress |
+			$0 -backend `basename $file .Z` ;;
+
+	*.z)
+		( gzip -d || ( cat >$PCATF; pcat $PCATF ; rm -f $PCATF ) ) 2>/dev/null |
+			$0 -backend `basename $file .z` ;;
+
+	*.gz)
+		exec gzip -d |
+			$0 -backend `basename $file .gz` ;;
+
+	*.dwg)
+		exec xdawg |
+			$0 -backend `basename $file .dwg` ;;
+
+	*)
+		exec cat ;;	# pipeline terminator
+esac

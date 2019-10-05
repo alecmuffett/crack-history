@@ -1,0 +1,15 @@
+SRCDIR=		Sources
+BIGDICT=	Dicts/bigdict
+UFCDIR=		libdes
+
+all:
+		@echo CALL TO CRACK.MF WITH NO TARGET
+
+spotless:	clean
+		-rm -f out.* $(BIGDICT)* Dicts/.lock*
+		-Scripts/mrgfbk
+
+clean:
+		-rm -f Runtime/D* Runtime/P* Runtime/RD* tmp.* nohup.out
+		-( cd $(SRCDIR) && make clean )
+###		-( cd $(UFCDIR) && make clean )

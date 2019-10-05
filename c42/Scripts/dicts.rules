@@ -1,0 +1,377 @@
+###
+# Description file for Crack dictionary processor. ADE Muffett, Mar 1992
+###
+# Ordinary Commands:
+# :	= no-op - do nothing to the input word
+# <n	= reject word UNLESS it is < n characters long, where n = 0-9a-z
+# >n	= reject word UNLESS it is > n characters long, where n = 0-9a-z
+# ^x	= prepend character 'x' to word
+# $y	= append character 'y' to word
+# l	= force word to be lowercase
+# u	= force word to be uppercase
+# c	= force word to be capitalised
+# r	= reverse word: "Fred" -> "derF"
+# d	= duplicate word: "Fred" -> "FredFred"
+# f	= reflect word: "Fred" -> "FredderF"
+# p	= make best attempt to pluralise a lowercase word
+# onx	= overstrike character in position 'n' (start at 0) with character 'x'
+#	  nb: little overflow checking is done, so use '<' and '>' carefully
+# inx	= insert character 'x' in position 'n' (start at 0) and shift the rest
+#	  of the input string right.
+#	  eg: i3* on "wibble" yields "wib*ble"; i0* on "wibble" yields "*wibble"
+#	  nb: if n > strlen(input), character 'x' will be appended
+# xnm	= extract substring from position n (start at 0) for up to m characters
+#	  eg: using x27 on "autobogotification" yields "tobogot"
+#	  eg: using x3a on "autobogotification" yields "obogotific" (10 chars)
+#	  nb: little overflow checking is done, so use '<' and '>' carefully
+###
+# Commands which may utilise character classes:	(note special use of '?')
+# sxy	= replace (swap) all 'x' in the word with 'y'
+# s?cy	= replace all characters of class 'c' in the word with y
+# @x	= purge all 'x' from the word
+# @?c	= purge all characters of class 'c' from the word
+# !y	= reject word if it contains character 'y'
+# !?c	= reject word if it contains a character in class 'c'
+# /x	= reject word unless it contains character 'x'
+# /?c	= reject word unless it contains a character in class 'c'
+# =nx	= reject word unless char at position 'n' is equal to x
+# =n?c	= reject word unless char at position 'n' is in class 'c'
+#	  nb: the word always starts at position 0
+###
+# Character classes for use in above:
+# ??	matches "?"
+# ?v	matches vowels aeiou
+# ?c	matches consonants bcdfghjklmnpqrstvwxyz
+# ?w	matches whitespace (space, tab)
+# ?p	matches punctuation .,:;'"?!`
+# ?s	matches symbols $%^&*()-_+=|\[]{}#@/~
+# ?l	matches lowercase letters
+# ?u	matches uppercase letters
+# ?d	matches any digit
+# ?a	matches any letter of the alphabet
+# ?x	matches any letter of the alphabet, or any digit (ie: is alphanumeric)
+# The complement of a class may be matched by the uppercase of it's letter
+# ie: where ?d == DIGITS, ?D == NON-DIGITS, and so on.
+###
+# Many people haven't realised that the above is a complete language; ie:
+# if you want to create a dictionary of short words with "123" appended,
+# use "<6l$1$2$3".
+###
+# A FINAL NOTE: remember that very few users are aware that passwords
+# stop at 8 chars long; so, while it IS worthwhile to check for words
+# being 8 or more chars long before appending a character, it is NOT
+# worthwhile to do the same when prepending characters. Hence:-
+#
+#		"williamsburgh"  -> "williams" }\
+#		"williamsburgh1" -> "williams" }/~~~Will be uniqued.
+#		"1williamsburgh" -> "1william"
+#
+###
+# So, here we go; try to order these in the order most likely to be a
+# password. First we try to make selections from the pure alphabetic
+# words in the dicts, then we get onto the weird stuff.
+######################################################################
+
+# Force every pure alphabetic word lowercase and try it
+# NOT-CONTAIN ANY NON-ALPHA, LOWERCASE
+!?Al
+
+# Pluralise every significant one of the above
+# MORE-THAN 2, NOT-CONTAIN ANY NON-ALPHA, LOWERCASE, PLURALISE
+>2!?Alp
+
+# Try variations of anything that is not pure alnum
+# CONTAIN ANY NON-ALNUM
+/?X
+# CONTAIN ANY NON-ALNUM, CONTAIN ANY UPPER, LOWERCASE
+/?X/?ul
+
+# Any alphaword >2 & <8 chars long, append a digit or simple punctuation
+# since few ppl add non alpha chars to a already non-alpha word
+# MORE-THAN 2, LESS-THAN 8, NOT ANY NON-ALPHA, LOWERCASE, APPEND <whatever>
+>2<8!?Al$0
+>2<8!?Al$1
+>2<8!?Al$2
+>2<8!?Al$3
+>2<8!?Al$4
+>2<8!?Al$5
+>2<8!?Al$6
+>2<8!?Al$7
+>2<8!?Al$8
+>2<8!?Al$9
+>2<8!?Al$!
+>2<8!?Al$.
+>2<8!?Al$?
+>2<8!?Al$ :
+# trailing colon (no-op) on last line delimits space character.
+
+# Lowercase every pure alphabetic word and reverse it
+# MORE-THAN 2, NOT-CONTAIN ANY NON-ALPHA, LOWERCASE, REVERSE
+>2!?Alr
+
+# Capitalise every pure alnum word (ie: not anything which is not alnum)
+# MORE-THAN 2, NOT-CONTAIN ANY NON-ALNUM, CAPITALISE
+>2!?Xc
+
+# Anything uppercase
+# MORE-THAN 2, NOT-CONTAIN ANY NON-ALNUM, UPPERCASE
+>2!?Xu
+
+# Pure alphabetic words with vowels removed which are still fairly long
+# NOT-CONTAIN ANY NON-ALPHA, CONTAIN ANY VOWEL, PURGE ANY VOWEL, MORE-THAN 3
+!?A/?v@?v>3
+
+# Look, I'm getting really bored of this monotone uppercase typing, so
+# if it's OK with you, I'll drop the commentaries on each rule. You
+# should have got the idea by now...
+
+# Longish pure words lowercased and reflected
+>2!?Alf
+
+# Words containing whitespace, which is then squeezed out
+/?w@?w>3
+
+# In a similar vein, words with punctuation, squeezed out
+/?p@?p>3
+
+# Reasonably short words, duplicated. eg: "fredfred"
+>1<7!?Ald
+
+###
+# >From: mycroft@edu.mit.ai.gnu
+# >In addition to the standard dicts.rules, I use the following set.  You
+# >can guess what it does.
+# I've tidied this up a bit (I hope) - alec
+###
+>2/asa2l
+>2/asa4l
+>2/ese3l
+>2/hsh4l
+>2/isi1l
+>2/lsl1l
+>2/oso0l
+>2/sss$l
+>2/asa2/hsh4l
+>2/asa2/sss$l
+>2/asa4/hsh4l
+>2/ese3/asa2l
+>2/ese3/asa4l
+>2/ese3/hsh4l
+>2/ese3/sss$l
+>2/isi1/asa2l
+>2/isi1/asa4l
+>2/isi1/ese3l
+>2/isi1/hsh4l
+>2/isi1/sss$l
+>2/lsl1/asa2l
+>2/lsl1/asa4l
+>2/lsl1/ese3l
+>2/lsl1/hsh4l
+>2/lsl1/isi1l
+>2/lsl1/oso0l
+>2/lsl1/sss$l
+>2/oso0/asa2l
+>2/oso0/asa4l
+>2/oso0/ese3l
+>2/oso0/hsh4l
+>2/oso0/isi1l
+>2/oso0/sss$l
+>2/sss$/asa4l
+>2/sss$/hsh4l
+>2/asa2/sss$/hsh4l
+>2/ese3/asa2/hsh4l
+>2/ese3/asa2/sss$l
+>2/ese3/asa4/hsh4l
+>2/ese3/sss$/asa4l
+>2/ese3/sss$/hsh4l
+>2/isi1/asa2/hsh4l
+>2/isi1/asa2/sss$l
+>2/isi1/asa4/hsh4l
+>2/isi1/ese3/asa2l
+>2/isi1/ese3/asa4l
+>2/isi1/ese3/hsh4l
+>2/isi1/ese3/sss$l
+>2/isi1/sss$/asa4l
+>2/isi1/sss$/hsh4l
+>2/lsl1/asa2/hsh4l
+>2/lsl1/asa2/sss$l
+>2/lsl1/asa4/hsh4l
+>2/lsl1/ese3/asa2l
+>2/lsl1/ese3/asa4l
+>2/lsl1/ese3/hsh4l
+>2/lsl1/ese3/sss$l
+>2/lsl1/isi1/asa2l
+>2/lsl1/isi1/asa4l
+>2/lsl1/isi1/ese3l
+>2/lsl1/isi1/hsh4l
+>2/lsl1/isi1/sss$l
+>2/lsl1/oso0/asa2l
+>2/lsl1/oso0/asa4l
+>2/lsl1/oso0/ese3l
+>2/lsl1/oso0/hsh4l
+>2/lsl1/oso0/isi1l
+>2/lsl1/oso0/sss$l
+>2/lsl1/sss$/asa4l
+>2/lsl1/sss$/hsh4l
+>2/oso0/asa2/hsh4l
+>2/oso0/asa2/sss$l
+>2/oso0/asa4/hsh4l
+>2/oso0/ese3/asa2l
+>2/oso0/ese3/asa4l
+>2/oso0/ese3/hsh4l
+>2/oso0/ese3/sss$l
+>2/oso0/isi1/asa2l
+>2/oso0/isi1/asa4l
+>2/oso0/isi1/ese3l
+>2/oso0/isi1/hsh4l
+>2/oso0/isi1/sss$l
+>2/oso0/sss$/asa4l
+>2/oso0/sss$/hsh4l
+>2/sss$/asa4/hsh4l
+>2/ese3/asa2/sss$/hsh4l
+>2/ese3/sss$/asa4/hsh4l
+>2/isi1/asa2/sss$/hsh4l
+>2/isi1/ese3/asa2/hsh4l
+>2/isi1/ese3/asa2/sss$l
+>2/isi1/ese3/asa4/hsh4l
+>2/isi1/ese3/sss$/asa4l
+>2/isi1/ese3/sss$/hsh4l
+>2/isi1/sss$/asa4/hsh4l
+>2/lsl1/asa2/sss$/hsh4l
+>2/lsl1/ese3/asa2/hsh4l
+>2/lsl1/ese3/asa2/sss$l
+>2/lsl1/ese3/asa4/hsh4l
+>2/lsl1/ese3/sss$/asa4l
+>2/lsl1/ese3/sss$/hsh4l
+>2/lsl1/isi1/asa2/hsh4l
+>2/lsl1/isi1/asa2/sss$l
+>2/lsl1/isi1/asa4/hsh4l
+>2/lsl1/isi1/ese3/asa2l
+>2/lsl1/isi1/ese3/asa4l
+>2/lsl1/isi1/ese3/hsh4l
+>2/lsl1/isi1/ese3/sss$l
+>2/lsl1/isi1/sss$/asa4l
+>2/lsl1/isi1/sss$/hsh4l
+>2/lsl1/oso0/asa2/hsh4l
+>2/lsl1/oso0/asa2/sss$l
+>2/lsl1/oso0/asa4/hsh4l
+>2/lsl1/oso0/ese3/asa2l
+>2/lsl1/oso0/ese3/asa4l
+>2/lsl1/oso0/ese3/hsh4l
+>2/lsl1/oso0/ese3/sss$l
+>2/lsl1/oso0/isi1/asa2l
+>2/lsl1/oso0/isi1/asa4l
+>2/lsl1/oso0/isi1/ese3l
+>2/lsl1/oso0/isi1/hsh4l
+>2/lsl1/oso0/isi1/sss$l
+>2/lsl1/oso0/sss$/asa4l
+>2/lsl1/oso0/sss$/hsh4l
+>2/lsl1/sss$/asa4/hsh4l
+>2/oso0/asa2/sss$/hsh4l
+>2/oso0/ese3/asa2/hsh4l
+>2/oso0/ese3/asa2/sss$l
+>2/oso0/ese3/asa4/hsh4l
+>2/oso0/ese3/sss$/asa4l
+>2/oso0/ese3/sss$/hsh4l
+>2/oso0/isi1/asa2/hsh4l
+>2/oso0/isi1/asa2/sss$l
+>2/oso0/isi1/asa4/hsh4l
+>2/oso0/isi1/ese3/asa2l
+>2/oso0/isi1/ese3/asa4l
+>2/oso0/isi1/ese3/hsh4l
+>2/oso0/isi1/ese3/sss$l
+>2/oso0/isi1/sss$/asa4l
+>2/oso0/isi1/sss$/hsh4l
+>2/oso0/sss$/asa4/hsh4l
+>2/isi1/ese3/asa2/sss$/hsh4l
+>2/isi1/ese3/sss$/asa4/hsh4l
+>2/lsl1/ese3/asa2/sss$/hsh4l
+>2/lsl1/ese3/sss$/asa4/hsh4l
+>2/lsl1/isi1/asa2/sss$/hsh4l
+>2/lsl1/isi1/ese3/asa2/hsh4l
+>2/lsl1/isi1/ese3/asa2/sss$l
+>2/lsl1/isi1/ese3/asa4/hsh4l
+>2/lsl1/isi1/ese3/sss$/asa4l
+>2/lsl1/isi1/ese3/sss$/hsh4l
+>2/lsl1/isi1/sss$/asa4/hsh4l
+>2/lsl1/oso0/asa2/sss$/hsh4l
+>2/lsl1/oso0/ese3/asa2/hsh4l
+>2/lsl1/oso0/ese3/asa2/sss$l
+>2/lsl1/oso0/ese3/asa4/hsh4l
+>2/lsl1/oso0/ese3/sss$/asa4l
+>2/lsl1/oso0/ese3/sss$/hsh4l
+>2/lsl1/oso0/isi1/asa2/hsh4l
+>2/lsl1/oso0/isi1/asa2/sss$l
+>2/lsl1/oso0/isi1/asa4/hsh4l
+>2/lsl1/oso0/isi1/ese3/asa2l
+>2/lsl1/oso0/isi1/ese3/asa4l
+>2/lsl1/oso0/isi1/ese3/hsh4l
+>2/lsl1/oso0/isi1/ese3/sss$l
+>2/lsl1/oso0/isi1/sss$/asa4l
+>2/lsl1/oso0/isi1/sss$/hsh4l
+>2/lsl1/oso0/sss$/asa4/hsh4l
+>2/oso0/ese3/asa2/sss$/hsh4l
+>2/oso0/ese3/sss$/asa4/hsh4l
+>2/oso0/isi1/asa2/sss$/hsh4l
+>2/oso0/isi1/ese3/asa2/hsh4l
+>2/oso0/isi1/ese3/asa2/sss$l
+>2/oso0/isi1/ese3/asa4/hsh4l
+>2/oso0/isi1/ese3/sss$/asa4l
+>2/oso0/isi1/ese3/sss$/hsh4l
+>2/oso0/isi1/sss$/asa4/hsh4l
+>2/lsl1/isi1/ese3/asa2/sss$/hsh4l
+>2/lsl1/isi1/ese3/sss$/asa4/hsh4l
+>2/lsl1/oso0/ese3/asa2/sss$/hsh4l
+>2/lsl1/oso0/ese3/sss$/asa4/hsh4l
+>2/lsl1/oso0/isi1/asa2/sss$/hsh4l
+>2/lsl1/oso0/isi1/ese3/asa2/hsh4l
+>2/lsl1/oso0/isi1/ese3/asa2/sss$l
+>2/lsl1/oso0/isi1/ese3/asa4/hsh4l
+>2/lsl1/oso0/isi1/ese3/sss$/asa4l
+>2/lsl1/oso0/isi1/ese3/sss$/hsh4l
+>2/lsl1/oso0/isi1/sss$/asa4/hsh4l
+>2/oso0/isi1/ese3/asa2/sss$/hsh4l
+>2/oso0/isi1/ese3/sss$/asa4/hsh4l
+>2/lsl1/oso0/isi1/ese3/asa2/sss$/hsh4l
+>2/lsl1/oso0/isi1/ese3/sss$/asa4/hsh4l
+# Bleagh! pant, pant - alec
+
+# Oddly enough, people prefixing passwords with numbers is quite a lot
+# rarer than suffixing numbers.  Hence, we are further down the file
+# before trying this. Oh well, let's nail the buggers anyway...
+>2<8l^ :
+>2l^0
+>2l^1
+>2l^2
+>2l^3
+>2l^4
+>2l^5
+>2l^6
+>2l^7
+>2l^8
+>2l^9
+
+# Capitalise and then reverse every word (eg: "derF")
+>2!?Xcr
+
+# Reverse and then capitalise every alphabetic word (eg: "Derf")
+>2rc
+
+# Pure words capitalised with various ejaculatory punctuation added
+# eg: "Cats!" for Andrew Floyd-Drebber fans...
+>2<8!?Ac$!
+>2<8!?Ac$.
+>2<8!?Ac$?
+
+# Uppercase words with various things appended or swapped out
+>2<8u$!
+>2<8u$.
+>2<8u$?
+>2/OsO0u
+
+# Really weird uppercase variations
+>2ud
+>2uf
+>2ur
+
+# Yes, I know all this looks like line noise, but I haven't put regexp in yet.

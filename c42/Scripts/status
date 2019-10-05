@@ -1,0 +1,28 @@
+#!/bin/sh
+
+###
+# This program is copyright Alec Muffett 1991, and is provided as part of
+# the Crack v4.0 Password Cracking package.  The author disclaims all
+# responsibility or liability with respect to it's usage or its effect
+# upon hardware or computer systems, and maintains copyright as set out in
+# the "LICENCE" document which accompanies distributions of Crack v4.0 and
+# upwards. So there...
+###
+
+cat Scripts/network.conf | 
+awk -F: '
+/^[A-Za-z]/{
+	print "echo ::: Calling", $1, " :-";
+
+	if ($4 == "")
+	{
+		rshf = "-n";
+	} else
+	{
+		rshf = "-n -l " $4;
+	}
+	print "rsh ", $1, rshf, "\"uptime ; ps x\"";
+} ' |
+sh
+
+exit 0

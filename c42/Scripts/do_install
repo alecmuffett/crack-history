@@ -1,0 +1,34 @@
+#!/bin/sh
+
+###
+# This program is copyright Alec Muffett 1991, and is provided as part of
+# the Crack v4.0 Password Cracking package.  The author disclaims all
+# responsibility or liability with respect to it's usage or its effect
+# upon hardware or computer systems, and maintains copyright as set out in
+# the "LICENCE" document which accompanies distributions of Crack v4.0 and
+# upwards. So there...
+###
+
+crack_arch=$1
+
+###
+# Is there a binaries directory ?
+###
+
+if [ ! -d $crack_arch ]
+then
+	mkdir $crack_arch || exit 1
+fi
+
+cd $crack_arch || exit 1                        # Can we get there from here ?
+
+###
+# Install makefiles in our directory if necessary.
+###
+
+if [ ! -f Makefile ]
+then
+	cp $CRACK_HOME/Scripts/install.mf Makefile || exit 1
+fi
+
+exit 0

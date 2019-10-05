@@ -1,0 +1,113 @@
+#!/bin/sh
+
+###
+# This program is copyright Alec Muffett 1991, and is provided as part of
+# the Crack v4.0 Password Cracking package.  The author disclaims all
+# responsibility or liability with respect to it's usage or its effect
+# upon hardware or computer systems, and maintains copyright as set out in
+# the "LICENCE" document which accompanies distributions of Crack v4.0 and
+# upwards. So there...
+###
+
+###
+# Empty the output file, Error if cannot create
+###
+
+warn=$1
+shift
+cp /dev/null $warn || exit 1
+
+###
+# Have we got feedback ?
+###
+
+fbkfiles=`sh -c "echo Runtime/F*"`
+if [ "$fbkfiles" = "Runtime/F*" ]
+then
+	fbkfiles=""
+fi
+
+###
+# As Walt Disney would say, we start with a simple bracket:-
+###
+
+(
+	if [ "$fbkfiles" != "" ]
+	then
+		cat $fbkfiles
+	fi
+
+	(
+		for file in $*
+		do
+			awk '/^[A-Za-z0-9]/ {print "'"$file"':" $0}' < $file
+		done
+	) |
+	sort -t: +2
+) |
+awk -F: '
+BEGIN {
+	FS = ":";
+	numf = 8;		# number of fields in a pwent, + 1
+	warn="'"$warn"'";
+	date = "'"`date`"'";
+	date = substr(date, 5, 15);
+}
+
+/^!fb!/ {
+	if ($3 == "N")
+	{
+		guessable[$2] = "N";
+	} else if ($3 == "Y")
+	{
+		guessable[$2] = "Y";
+		decrypt[$2] = $4;
+	} else
+	{
+		print "Strange feedback: ", $0 >> "/dev/tty";
+	}
+	next;
+}
+
+NF != numf {
+	printf("join: Rejected '%s': does not have %d fields\n", \
+		$0, numf) >> warn;
+	next;
+}
+
+$3 == "" {
+	printf("join: %s Warning! %s (%s in %s) has a NULL password!\n", \
+		date, $2, $7, $1) >> warn;
+	next;
+}
+
+index($3, "*") != 0 || \
+index($3, "!") != 0 || \
+index($3, " ") != 0 {
+	printf("join: %s User %s (in %s) has a locked password:- %s\n", \
+		date, $2, $1, $3) >> warn;
+	next;
+}
+
+{
+	if (guessable[$3] == "N")
+	{
+		next;
+	} else if (guessable[$3] == "Y")
+	{
+		if ($4 == 0)
+		{
+			msg = "ROOT PASSWORD ";
+		} else
+		{
+			msg = "";
+		}
+		printf("join: %s Guessed %s%s (%s in %s) [%s] %s\n", \
+			date, msg, $2, $8, $1, decrypt[$3], $3) >> warn;
+	} else
+	{
+		print $0;
+	}
+}'
+
+exit 0

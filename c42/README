@@ -1,0 +1,31 @@
+This is Crack v4.1, the "Sensible" Unix Password Cracker. 
+
+- Documentation is in the directory 'Docs' - go for it... 
+
+dicts.rules is now up to 240 entries, mostly thanks to mycroft @
+gnu.ai.mit.edu; don't lose heart, its not as bad as all that...  3 weeks
+of CPU isn't all that long, really...  Seriously, most of the rules
+generate really small dictionaries, so it's not all that bad.  8-)
+
+There are several additions to the dictionary rules, notably the
+character class commands and the i, o, = and @ commands. 
+
+Use of "Crack -R" (as opposed to "Crack -r") is not recommended until I
+write v5.0, unless you know exactly what you're doing and why it bombs
+out on you... 
+
+Also, Crack now fully supports UFC (the latest version of which is to be
+posted concurrently with Crack v4.1) - all you should have to do is
+unpack the latest version of UFC into the directory
+
+				ufc-crypt
+
+which you should create in the Crack installation directory.  The
+program should do the rest. 
+
+Happy cracking !
+
+--
+|+ Alec David Edward Muffett, Unix Programmer and Unemployed Coffee Drinker. +|
+|>  aem@aber.ac.uk aem@uk.ac.aber aem%aber@ukacrl.bitnet mcsun!ukc!aber!aem  <|
+| "I didn't invent the Unix Password Security problem.  I just optimised it." |

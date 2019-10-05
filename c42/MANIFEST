@@ -1,0 +1,53 @@
+   File Name		Archive #	Description
+-----------------------------------------------------------
+ APPENDIX                   2	miscellaneous information
+ BUGS                       1	list of recent bugs and possible fixes
+ Crack                      2	crack driver shellscript
+ DictSrc                    1	directory
+ DictSrc/bad_pws.dat        2	example extra dictionary
+ DictSrc/jargon             1	jargon dictionary contributed by ESR
+ Dicts                      1	empty directory
+ Docs                       1	directory
+ Docs/readme.ms             4	coarse nroff -ms format documentation
+ Docs/readme.txt            5	ascii format documentation
+ LICENCE                    2	licence document
+ MANIFEST                   1	THIS FILE
+ README                     1	EVERYBODY START HERE
+ Runtime                    1	empty directory
+ Scripts                    1	scripts directory
+ Scripts/Crack.network      2	network driver script
+ Scripts/RCrack             1	interface to 'rsh', 'remsh' - whatever
+ Scripts/clean              1	tidy-up script
+ Scripts/crack.mf           1	
+ Scripts/dicts.rules        2	rules applied to dictionary words
+ Scripts/do_install         1	
+ Scripts/do_join            1	
+ Scripts/do_pwc             1	
+ Scripts/do_ufc             1	
+ Scripts/gecos.rules        1	rules applied to gecos-generated words
+ Scripts/guess2fbk          1	crash recovery script (see docs)
+ Scripts/install.mf         1	
+ Scripts/mrgfbk             1	
+ Scripts/nastygram          1	
+ Scripts/network.conf       1	
+ Scripts/plaster            1	crack control script
+ Scripts/saltcount          1	
+ Scripts/shadmrg            1	
+ Scripts/spotless           1	tidy up and delete script
+ Scripts/status             1	
+ Sources                    1	source code directory
+ Sources/Makefile           1	
+ Sources/bytesex.c          1	
+ Sources/conf.h             1	configuration header file
+ Sources/crack-fcrypt.c     4	
+ Sources/crack-glob.c       1	
+ Sources/crack-glob.h       1	
+ Sources/crack-lib.c        3	
+ Sources/crack-pwc.c        3	password cracker main file
+ Sources/crack-sort.c       2	
+ Sources/crack-supp.c       1	
+ Sources/crack.h            1	
+ Sources/speeds.c           1	benchmark program
+ Sources/tester.c           1	fcrypt compatibility program
+ Sources/testrule.c         1	dictionary tester program
+ TODO                       1	List of good ideas I _already_ have
